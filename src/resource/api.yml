@@ -1,0 +1,227 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Cart
+  license:
+    name: MIT
+paths:
+  /items:
+    get:
+      summary: cart items
+      description: get cart's items
+      operationId: showCartItems
+      responses:
+        '200':
+          description: An array of items
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /items/{productId}:
+    post:
+      summary: add item
+      description: add new item
+      operationId: addItem
+      parameters:
+        - name: productId
+          in: path
+          description: The ID of product.
+          required: true
+          schema:
+            type: string
+            example: 12131
+      requestBody:
+        description: The item
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemFiled"
+        required: true
+      responses:
+        200:
+          description: "add successfully"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+
+    put:
+      description: update item quantity
+      operationId: "updateItem"
+      parameters:
+        - name: productId
+          in: path
+          description: The ID of product.
+          required: true
+          schema:
+            type: string
+            example: 12131
+      requestBody:
+        description: item that need to update
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemFiled"
+        required: true
+
+      responses:
+        200:
+          description: "update successfully"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+    delete:
+      summary: delete item
+      description: delete the item whose id is the product id
+      operationId: deleteItem
+      parameters:
+        - name: productId
+          in: path
+          description: the id of product to be deleted
+          required: true
+          schema:
+            type: string
+            example: 123124
+      responses:
+        200:
+          description: "respond for delete request"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /products:
+    get:
+      summary: List all products
+      operationId: listProducts
+      tags:
+        - products
+      responses:
+        '200':
+          description: A paged array of products
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Products"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /products/{productId}:
+    get:
+      summary: Info for a specific product
+      operationId: showProductById
+      tags:
+        - product
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          description: The id of the product to retrieve
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Expected response to a valid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        '404':
+          description: Product not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  schemas:
+    Product:
+      type: object
+      required:
+        - id
+        - name
+        - price
+        - image
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        price:
+          type: number
+        image:
+          type: string
+
+    ItemFiled:
+      required:
+        - quantity
+      description: Editable fields of Item
+      type: object
+      properties:
+        quantity:
+          type: integer
+
+    Item:
+      required:
+        - product
+        - quantity
+      properties:
+        product:
+          $ref: "#/components/schemas/Product"
+        quantity:
+          type: integer
+
+
+    Cart:
+      type: array
+      items:
+        $ref: "#/components/schemas/Item"
+
+    Message:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+
+    Products:
+      type: array
+      items:
+        $ref: "#/components/schemas/Product"

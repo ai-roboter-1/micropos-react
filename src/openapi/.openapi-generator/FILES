@@ -1,0 +1,12 @@
+apis/DefaultApi.ts
+apis/ProductApi.ts
+apis/ProductsApi.ts
+apis/index.ts
+index.ts
+models/Item.ts
+models/ItemFiled.ts
+models/Message.ts
+models/ModelError.ts
+models/Product.ts
+models/index.ts
+runtime.ts
