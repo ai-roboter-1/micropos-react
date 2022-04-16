@@ -2,45 +2,74 @@ import React, {useEffect, useState} from 'react';
 // import logo from './logo.svg';
 import {Button, Card, Col, InputNumber, Row, Table} from "antd";
 import './App.css';
-import {AddItemRequest, DefaultApi, DeleteItemRequest, Item, ItemFiled, Product, ProductsApi} from "./openapi";
+import {
+    AddItemRequest,
+    ItemApi,
+    DeleteItemRequest,
+    Item,
+    ItemFiled,
+    Product,
+    ProductsApi,
+    Configuration
+} from "./openapi";
 import Meta from "antd/es/card/Meta";
 import {CloseCircleFilled, DeleteFilled, ShoppingCartOutlined, ShoppingOutlined} from "@ant-design/icons";
 import Title from "antd/es/typography/Title";
 import Paragraph from "antd/es/typography/Paragraph";
 import Column from "antd/es/table/Column";
 
-const DEV = true
+const DEV = false
 function App() {
-    const productsApi = new ProductsApi();
-    const cartAPI = new DefaultApi();
+    const cfg: Configuration = new Configuration({basePath: "/api", fetchApi: (url, init)=> {
+        // if (init) {
+        //     init.credentials = "include";
+        // } else {
+        //     init = {credentials: "include", mode: "cors"}
+        // }
+        return fetch("http://localhost" + url, init);
+        }})
+
+    const productsApi = new ProductsApi(cfg);
+    const cartAPI = new ItemApi(cfg);
     const [products, setProducts] = useState<Array<Product>>([]);
     const [items, setItems] = useState<Array<Item>>([]);
 
 
-    // @quantity: 未定义默认在当前+1，否则更新为当前quantity
-    const updateItemQuantity = (productId: string, quantity?: number) => {
-        if (quantity === undefined) {
-            const itemToUpdate = items.filter(item => item.product.id === productId)
-            if (itemToUpdate.length !== 0 ) {
-                quantity = itemToUpdate[0].quantity + 1;
-            } else {
-                quantity = 1;
+    const updateItems = (preItems: Array<Item>, currentItem: Item) => {
+        // let newItems = Object.assign({}, preItems);
+        let result:Array<Item> = preItems.slice();
+        for(let i = 0; i < preItems.length; i++) {
+            if (preItems[i].product.id === currentItem.product.id) {
+                result[i].quantity = currentItem.quantity;
+                return result;
             }
         }
-
-        const itemFiled: ItemFiled = {quantity};
-        const requestArgs: AddItemRequest = {productId, itemFiled}
-        cartAPI.addItem(requestArgs).then(() => {
-            //todo
-        })
+        return result.concat(currentItem);
     }
 
+    // @quantity: 未定义默认在当前+1，否则更新为当前quantity
+    const updateItemQuantity = (productId: string, quantity: number) => {
+        cartAPI.updateItem({productId: productId, itemFiled: {quantity: quantity}})
+            .then(item => {
+                setItems(updateItems(items, item));
+            })
+
+    }
+
+
+
+    const addItem = (productId: string) => {
+        cartAPI.addItem({itemFiled: {quantity: 1}, productId: productId})
+            .then((item) => {
+                if (item !== null) {
+                    setItems(updateItems(items, item));
+                }
+            })
+    }
     const deleteItem  = (productId: string) => {
         const requestArgs: DeleteItemRequest = {productId};
         cartAPI.deleteItem(requestArgs).then(resp => {
-            if (resp.success) {
-                setItems(items.filter(item => item.product.id !== productId))
-            }
+            setItems(items.filter(i => i.product.id !== resp.product.id));
         })
     }
     useEffect(() => {
@@ -51,11 +80,15 @@ function App() {
                 quantity :10}]);
         } else {
             productsApi.listProducts().then((result) => {
-                setProducts(result);
+                setProducts(result.filter(item => (item.id !== "")));
+            }).catch(e => {
+                console.log(e)
             });
             cartAPI.showCartItems().then(result => {
                 setItems(result);
-            })
+            }).catch(e => {
+                console.log(e)
+            });
         }
     }, [])
 
@@ -65,7 +98,7 @@ function App() {
                 <Paragraph strong={true} style={{fontSize: "medium"}} >total</Paragraph>
             </Col>
             <Col span={4} style={{fontSize: "medium"}} >
-                {items.reduce((pre, current) => (pre + current.product.price * current.quantity), 0)} ￥
+                {items.reduce((pre, current) => (pre + current.product.price * current.quantity), 0).toFixed(1)} ￥
             </Col>
         </Row>
         <Row>
@@ -98,7 +131,7 @@ function App() {
                                               <Col span={12}>
                                                   <Button icon={<ShoppingCartOutlined key={"add-item"}/>}
                                                                                   type={"primary"}
-                                                                                  onClick={() => {updateItemQuantity(product.id)}}
+                                                                                  onClick={() => {addItem(product.id)}}
                                                   >Add</Button>
                                               </Col>
 
@@ -126,23 +159,25 @@ function App() {
                    <Table<Product & {quantity: number}> dataSource={items.map(item => (
                         Object.assign(item.product, {quantity: item.quantity}))
                    )}
-                        scroll={{x : "100%"}}
+                        // scroll={{x : "100%"}}
                         footer={() => cartFooter(items)}
                    >
                        <Column title={"product"}
+                               width={"10%"}
                                dataIndex={"image"}
                                render={imageUrl => (
-                                   <img  width={"100%"} src={imageUrl} alt={"image"}/>
+                                   <img  width={"80%"} src={imageUrl} alt={"image"}/>
                                )}
                        />
                         <Column title={"product name"}
                                 dataIndex={"name"}
-                                // ellipsis={true}
-                                width={"10%"}
+                                ellipsis={true}
+                                width={"15%"}
 
                         />
                        <Column title={"price"}
                                dataIndex={"price"}
+                               width={"7%"}
                        />
                         <Column<Product & {quantity: number}> title={"quantity"}
                                 dataIndex={"quantity"}
@@ -161,7 +196,7 @@ function App() {
                                dataIndex={"id"}
                                width={"10%"}
                                render={(id: string) => (
-                                   <Button danger icon={<DeleteFilled color={"red"}/>} >
+                                   <Button danger icon={<DeleteFilled color={"red"}/>} onClick={() => {deleteItem(id)}}>
                                        remove
                                    </Button>
                                )}/>

@@ -1,4 +1,4 @@
-apis/DefaultApi.ts
+apis/ItemApi.ts
 apis/ProductApi.ts
 apis/ProductsApi.ts
 apis/index.ts

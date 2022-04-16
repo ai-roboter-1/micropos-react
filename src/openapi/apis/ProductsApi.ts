@@ -34,7 +34,7 @@ export class ProductsApi extends runtime.BaseAPI {
         const headerParameters: runtime.HTTPHeaders = {};
 
         const response = await this.request({
-            path: `/products`,
+            path: `/product`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
